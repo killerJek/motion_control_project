@@ -227,6 +227,11 @@ int main ()
 
   PID pid_steer = PID();
   PID pid_throttle = PID();
+  // pid_steer.Init(0.32, 0.05, 0.1, 1.2, -1.2);
+  pid_steer.Init(0.1, 0.0001, 0.00001, 1.2, -1.2);
+  // pid_throttle.Init(0.20,0.,0.,1,-1);
+  // pid_throttle.Init(0.21,0.0009, 0.1, 1.0, -1.0);
+  pid_throttle.Init(0.1,0.000001, 0.000001, 1.0, -1.0);
 
   h.onMessage([&pid_steer, &pid_throttle, &new_delta_time, &timer, &prev_timer, &i, &prev_timer](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode)
   {
@@ -288,35 +293,51 @@ int main ()
           /**
           * TODO (step 3): uncomment these lines
           **/
-//           // Update the delta time with the previous command
-//           pid_steer.UpdateDeltaTime(new_delta_time);
+          // Update the delta time with the previous command
+          pid_steer.UpdateDeltaTime(new_delta_time);
 
           // Compute steer error
           double error_steer;
 
 
-          double steer_output;
+          double steer_output =0.0;
 
           /**
           * TODO (step 3): compute the steer error (error_steer) from the position and the desired trajectory
           **/
-//           error_steer = 0;
+          error_steer = 0;
 
+          vector<float> distance;
+          float min{10000};
+          int index=-1;
+          for (size_t i =0; i<x_points.size(); ++i){
+              const auto dist = std::sqrt(std::pow(x_points[i] - x_position, 2) + std::pow(y_points[i]- y_position,2));
+              if(min > dist){
+                min = dist;
+                index = i;
+              }
+          }
+
+          // const auto theta_ref = angle_between_points(
+          // x_points[index], y_points[index], x_points[index+5], y_points[index+5]);
+
+          double theta_ref = angle_between_points(x_position,y_position,x_points[index],y_points[index]]);
+          error_steer = yaw - theta_ref;  
           /**
           * TODO (step 3): uncomment these lines
           **/
 //           // Compute control to apply
-//           pid_steer.UpdateError(error_steer);
-//           steer_output = pid_steer.TotalError();
+          pid_steer.UpdateError(error_steer);
+          steer_output = pid_steer.TotalError();
 
-//           // Save data
-//           file_steer.seekg(std::ios::beg);
-//           for(int j=0; j < i - 1; ++j) {
-//               file_steer.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-//           }
-//           file_steer  << i ;
-//           file_steer  << " " << error_steer;
-//           file_steer  << " " << steer_output << endl;
+          // Save data
+          file_steer.seekg(std::ios::beg);
+          for(int j=0; j < i - 1; ++j) {
+              file_steer.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+          }
+          file_steer  << i ;
+          file_steer  << " " << error_steer;
+          file_steer  << " " << steer_output << endl;
 
           ////////////////////////////////////////
           // Throttle control
@@ -325,8 +346,8 @@ int main ()
           /**
           * TODO (step 2): uncomment these lines
           **/
-//           // Update the delta time with the previous command
-//           pid_throttle.UpdateDeltaTime(new_delta_time);
+          // Update the delta time with the previous command
+          pid_throttle.UpdateDeltaTime(new_delta_time);
 
           // Compute error of speed
           double error_throttle;
@@ -334,9 +355,9 @@ int main ()
           * TODO (step 2): compute the throttle error (error_throttle) from the position and the desired speed
           **/
           // modify the following line for step 2
-          error_throttle = 0;
-
-
+          // error_throttle = velocity -  v_points[v_points.size() - 10]; //the velocity error is the difference between the velocity that 
+          error_throttle = velocity -  v_points[index]; //the velocity error is the difference between the velocity that 
+                                                      //I want to obtain and the actual velocity, this will be use in the PID controller (if less than 0 I have to brake)
 
           double throttle_output;
           double brake_output;
@@ -344,28 +365,29 @@ int main ()
           /**
           * TODO (step 2): uncomment these lines
           **/
-//           // Compute control to apply
-//           pid_throttle.UpdateError(error_throttle);
-//           double throttle = pid_throttle.TotalError();
+          // Compute control to apply
+          pid_throttle.UpdateError(error_throttle);
+          double throttle = pid_throttle.TotalError();
+          std::cout << "New delta time " << new_delta_time << std::endl;
 
-//           // Adapt the negative throttle to break
-//           if (throttle > 0.0) {
-//             throttle_output = throttle;
-//             brake_output = 0;
-//           } else {
-//             throttle_output = 0;
-//             brake_output = -throttle;
-//           }
+          // Adapt the negative throttle to break
+          if (throttle > 0.0) {
+            throttle_output = throttle;
+            brake_output = 0;
+          } else {
+            throttle_output = 0;
+            brake_output = -throttle;
+          }
 
-//           // Save data
-//           file_throttle.seekg(std::ios::beg);
-//           for(int j=0; j < i - 1; ++j){
-//               file_throttle.ignore(std::numeric_limits<std::streamsize>::max(),'\n');
-//           }
-//           file_throttle  << i ;
-//           file_throttle  << " " << error_throttle;
-//           file_throttle  << " " << brake_output;
-//           file_throttle  << " " << throttle_output << endl;
+          // Save data
+          file_throttle.seekg(std::ios::beg);
+          for(int j=0; j < i - 1; ++j){
+              file_throttle.ignore(std::numeric_limits<std::streamsize>::max(),'\n');
+          }
+          file_throttle  << i ;
+          file_throttle  << " " << error_throttle;
+          file_throttle  << " " << brake_output;
+          file_throttle  << " " << throttle_output << endl;
 
 
           // Send control

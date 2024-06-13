@@ -13,7 +13,17 @@ public:
    /**
    * TODO: Create the PID class
    **/
-
+    double Kp{.0};
+    double Ki{.0};
+    double Kd{.0};
+    double output_lim_max{.0};
+    double output_lim_min{.0};
+    double output{.0};
+    double noise{.0};
+    double error{.0};
+    double prev_error{0.0};
+    double dt{0.};
+    double integral{0.};
     /*
     * Errors
     */

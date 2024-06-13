@@ -36,6 +36,10 @@ void PID::UpdateError(double cte) {
   //error = pow(cte, 2);
   error = cte;
 
+  derivative = (dt > 0) ? (cte - prev_error) / dt : 0.0;
+  integral+= error*dt;
+
+
 }
 
 double PID::TotalError() {
@@ -44,20 +48,12 @@ double PID::TotalError() {
     * The code should return a value in the interval [output_lim_mini, output_lim_maxi]
    */
     // float derivative = MAXFLOAT;
-    float derivative = (error-prev_error);
     // if(dt > 0.0000001){
     //   derivative =(error-prev_error)/dt;
 
     // }
-    integral+= error;
     double total_error = -Kp*error-Kd*derivative-Ki*integral;
-    if(total_error> output_lim_max){
-      return output_lim_max;
-    }else if (total_error < output_lim_min){
-      return output_lim_min;
-    }else {
-      return total_error;
-    }
+    return max(min(total_error, this->output_lim_max), this->output_lim_min);
 }
 
 double PID::UpdateDeltaTime(double new_delta_time) {

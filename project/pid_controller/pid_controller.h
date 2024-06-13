@@ -24,6 +24,7 @@ public:
     double prev_error{0.0};
     double dt{0.};
     double integral{0.};
+    double derivative{0.};
     /*
     * Errors
     */

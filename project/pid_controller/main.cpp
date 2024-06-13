@@ -228,10 +228,15 @@ int main ()
   PID pid_steer = PID();
   PID pid_throttle = PID();
   // pid_steer.Init(0.32, 0.05, 0.1, 1.2, -1.2);
-  pid_steer.Init(0.1, 0.0001, 0.00001, 1.2, -1.2);
+  //pid_steer.Init(0.8, 0.07, 0.0008, 1.2, -1.2);
   // pid_throttle.Init(0.20,0.,0.,1,-1);
   // pid_throttle.Init(0.21,0.0009, 0.1, 1.0, -1.0);
-  pid_throttle.Init(0.1,0.000001, 0.000001, 1.0, -1.0);
+  //pid_throttle.Init(2, 0.7, 0.089, 1.0, -1.0);
+
+    // Using params calculated in the Parameter Optimization exercise, then adjusting after running the simulation multiple times
+  pid_steer.Init(.27, .001, 0.71, 1.2, -1.2);
+  // At first, using the same Steering params. Then, adjusting them manually after running Carla for multiple times.
+  pid_throttle.Init(.2, .002, .02, 1, -1);
 
   h.onMessage([&pid_steer, &pid_throttle, &new_delta_time, &timer, &prev_timer, &i, &prev_timer](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode)
   {
@@ -288,6 +293,7 @@ int main ()
 
           ////////////////////////////////////////
           // Steering control
+
           ////////////////////////////////////////
 
           /**
@@ -320,8 +326,10 @@ int main ()
 
           // const auto theta_ref = angle_between_points(
           // x_points[index], y_points[index], x_points[index+5], y_points[index+5]);
-
-          double theta_ref = angle_between_points(x_position,y_position,x_points[index],y_points[index]]);
+          double theta_ref{0};
+          if((x_points[x_points.size() -1]-x_points[0])!=0){
+            theta_ref = angle_between_points(x_points[0], y_points[0],x_points[x_points.size()-1],y_points[y_points.size()-1]);
+          }
           error_steer = yaw - theta_ref;  
           /**
           * TODO (step 3): uncomment these lines
@@ -356,7 +364,7 @@ int main ()
           **/
           // modify the following line for step 2
           // error_throttle = velocity -  v_points[v_points.size() - 10]; //the velocity error is the difference between the velocity that 
-          error_throttle = velocity -  v_points[index]; //the velocity error is the difference between the velocity that 
+          error_throttle = velocity -  v_points.back(); //the velocity error is the difference between the velocity that 
                                                       //I want to obtain and the actual velocity, this will be use in the PID controller (if less than 0 I have to brake)
 
           double throttle_output;

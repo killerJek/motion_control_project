@@ -232,11 +232,8 @@ int main ()
   // pid_throttle.Init(0.20,0.,0.,1,-1);
   // pid_throttle.Init(0.21,0.0009, 0.1, 1.0, -1.0);
   //pid_throttle.Init(2, 0.7, 0.089, 1.0, -1.0);
-
-    // Using params calculated in the Parameter Optimization exercise, then adjusting after running the simulation multiple times
-  pid_steer.Init(.27, .001, 0.71, 1.2, -1.2);
-  // At first, using the same Steering params. Then, adjusting them manually after running Carla for multiple times.
-  pid_throttle.Init(.2, .002, .02, 1, -1);
+  pid_steer.Init(.2, .01, 0.3, 1.2, -1.2);
+  pid_throttle.Init(.1, .006, .002, 1, -1 );
 
   h.onMessage([&pid_steer, &pid_throttle, &new_delta_time, &timer, &prev_timer, &i, &prev_timer](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode)
   {
@@ -314,7 +311,7 @@ int main ()
           error_steer = 0;
 
           vector<float> distance;
-          float min{10000};
+          float min{10000000};
           int index=-1;
           for (size_t i =0; i<x_points.size(); ++i){
               const auto dist = std::sqrt(std::pow(x_points[i] - x_position, 2) + std::pow(y_points[i]- y_position,2));
@@ -327,10 +324,10 @@ int main ()
           // const auto theta_ref = angle_between_points(
           // x_points[index], y_points[index], x_points[index+5], y_points[index+5]);
           double theta_ref{0};
-          if((x_points[x_points.size() -1]-x_points[0])!=0){
-            theta_ref = angle_between_points(x_points[0], y_points[0],x_points[x_points.size()-1],y_points[y_points.size()-1]);
+          if((x_points[index]-x_position)!=index){
+            theta_ref = angle_between_points(x_position, y_position,x_points[index],y_points[index]);
           }
-          error_steer = yaw - theta_ref;  
+          error_steer = theta_ref -yaw;  
           /**
           * TODO (step 3): uncomment these lines
           **/
@@ -364,7 +361,8 @@ int main ()
           **/
           // modify the following line for step 2
           // error_throttle = velocity -  v_points[v_points.size() - 10]; //the velocity error is the difference between the velocity that 
-          error_throttle = velocity -  v_points.back(); //the velocity error is the difference between the velocity that 
+          error_throttle = v_points[index] - velocity; //the velocity error is the difference between the velocity that 
+          //error_throttle = velocity -  v_points.back(); //the velocity error is the difference between the velocity that 
                                                       //I want to obtain and the actual velocity, this will be use in the PID controller (if less than 0 I have to brake)
 
           double throttle_output;
@@ -416,6 +414,13 @@ int main ()
           //  min point threshold before doing the update
           // for high update rate use 19 for slow update rate use 4
           msgJson["update_point_thresh"] = 16;
+
+          //Mine
+          msgJson["actual_vel"] = velocity;
+          msgJson["actual_yaw"] = yaw;
+          msgJson["theta_ref"] = theta_ref;
+          msgJson["theta_ref"] = theta_ref;
+          msgJson["min_index"] = index;
 
           auto msg = msgJson.dump();
 

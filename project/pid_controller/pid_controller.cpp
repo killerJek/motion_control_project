@@ -32,11 +32,10 @@ void PID::UpdateError(double cte) {
    /**
    * TODO: Update PID errors based on cte.
    **/
-  prev_error = error;
-  //error = pow(cte, 2);
   error = cte;
-
   derivative = (dt > 0) ? (cte - prev_error) / dt : 0.0;
+  prev_error = error;
+
   integral+= error*dt;
 
 
@@ -47,12 +46,7 @@ double PID::TotalError() {
    * TODO: Calculate and return the total error
     * The code should return a value in the interval [output_lim_mini, output_lim_maxi]
    */
-    // float derivative = MAXFLOAT;
-    // if(dt > 0.0000001){
-    //   derivative =(error-prev_error)/dt;
-
-    // }
-    double total_error = -Kp*error-Kd*derivative-Ki*integral;
+    double total_error = Kp*error+Kd*derivative+Ki*integral;
     return max(min(total_error, this->output_lim_max), this->output_lim_min);
 }
 
